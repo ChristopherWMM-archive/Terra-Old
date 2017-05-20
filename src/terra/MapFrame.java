@@ -8,26 +8,21 @@ public class MapFrame extends JFrame
 	private final int WIDTH;
 	private final int HEIGHT;
 	private final MapPanel MAP_PANEL;
-	private final boolean IS_VISIBLE;
-	private final boolean IS_RESIZABLE;
 	
-	public MapFrame(String title, int width, int height, MapPanel mapPanel, boolean isVisible, boolean isResizable)
+	public MapFrame(String title, int width, int height, MapPanel mapPanel)
 	{
 		this.TITLE = title;
 		this.WIDTH = width;
 		this.HEIGHT = height;
 		this.MAP_PANEL = mapPanel;
-		this.IS_VISIBLE = isVisible;
-		this.IS_RESIZABLE = isResizable;
 		
-		// TODO setIconImage(image);
-
 		setTitle(TITLE);
 		add(MAP_PANEL);
-        pack();
-        setSize(WIDTH, HEIGHT);
-        setVisible(IS_VISIBLE);
-        setResizable(IS_RESIZABLE);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		pack();
+		setSize(WIDTH, HEIGHT);
+		setIconImage(new HeightMapGenerator(32, 32, new PerlinNoise2D(32, 32, 6, 0.5, 3, 4)).getImage());
+		setVisible(true);
+		setResizable(false);
+		setLocationRelativeTo(null);
 	}
 }
