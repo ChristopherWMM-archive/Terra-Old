@@ -2,8 +2,8 @@
 
 Terra is a top down, 2D, world generator aimed at creating and populating realistic worlds based on a multitude of factors.
 
-###Advanced Perlin Noise
-Terra's perlin noise allows for a multitude of powerful functions. These range from optional fall off maps to controllable octaves, persistance, lacunarity, and pseudo-random seeding.
+### Advanced Perlin Noise
+Terra's perlin noise allows for a multitude of powerful functions. These range from optional fall off maps to controllable octaves, persistance, lacunarity, and pseudorandom seeding.
 
 
 |               *Base Noise*               |             *Fall Off Maps*              |          *Controllable Values*           |                 *Seeds*                  |
