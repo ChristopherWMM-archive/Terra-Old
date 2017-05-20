@@ -6,6 +6,6 @@ public class Terra
 	
 	public static void main(String[] args) 
 	{
-    	new TerraFrame(APPLICATION_TITLE, 200, 450);
+		new TerraFrame(APPLICATION_TITLE, 200, 450);
 	}
 }

@@ -11,7 +11,7 @@ public class MapPanel extends JPanel
 	
 	public MapPanel(BufferedImage image) 
 	{
-    	this.image = image;
+		this.image = image;
 	}
 
 	public void paintComponent(Graphics graphics) 

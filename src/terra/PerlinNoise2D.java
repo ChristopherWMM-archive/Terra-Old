@@ -161,7 +161,7 @@ public class PerlinNoise2D extends Noise2D
 		int flooredX = (int) Math.floor(frequencyX) & 255;
 		int flooredY = (int) Math.floor(frequencyY) & 255;
 
-    	int corner1 = PERMUTATION_TABLE[PERMUTATION_TABLE[flooredX] + flooredY];
+		int corner1 = PERMUTATION_TABLE[PERMUTATION_TABLE[flooredX] + flooredY];
     	int corner2 = PERMUTATION_TABLE[PERMUTATION_TABLE[flooredX + 1] + flooredY];
     	int corner3 = PERMUTATION_TABLE[PERMUTATION_TABLE[flooredX] + flooredY + 1];
     	int corner4 = PERMUTATION_TABLE[PERMUTATION_TABLE[flooredX + 1] + flooredY + 1];
@@ -277,7 +277,7 @@ public class PerlinNoise2D extends Noise2D
 
 				int blue = (int)(noiseValue * 0xFF);
 				int green = blue * 0x100;
-    			int red = blue * 0x10000;
+				int red = blue * 0x10000;
     			int finalColor = red + green + blue;
 
     			noiseImage.setRGB(x, y, finalColor);
@@ -294,7 +294,7 @@ public class PerlinNoise2D extends Noise2D
 	
 	private double inverseLerp(double dataLow, double dataHigh, double x)
 	{
-	    return ((x - dataLow) / (dataHigh - dataLow));
+		return ((x - dataLow) / (dataHigh - dataLow));
 	}
     
 	private static double interpolate(double value) 
