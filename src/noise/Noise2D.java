@@ -1,4 +1,4 @@
-package terra;
+package noise;
 
 import java.awt.image.BufferedImage;
 
@@ -32,6 +32,15 @@ public abstract class Noise2D
 	protected abstract double[][] generateNoiseArray();
 	
 	protected abstract BufferedImage generateNoiseImage();
+	
+	protected int getGreyscaleNoiseColor(double noiseValue)
+	{
+		int blue = (int)(noiseValue * 0xFF);
+		int green = blue * 0x100;
+		int red = blue * 0x10000;
+		
+		return red + green + blue;
+	}
 	
 	public int getWidth()
 	{

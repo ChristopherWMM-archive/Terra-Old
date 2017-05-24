@@ -1,4 +1,4 @@
-package terra;
+package noise;
 
 import java.awt.image.BufferedImage;
 import java.util.Random;
@@ -65,20 +65,13 @@ public class WhiteNoise2D extends Noise2D
 	{
 		BufferedImage noiseImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
-		double[][] noise = generateNoiseArray();
+		double[][] noiseValues = generateNoiseArray();
 		
 		for (int x = 0; x < width; x++)
 		{
 			for (int y = 0; y < height; y++)
 			{
-				double noiseValue = noise[x][y];
-
-				int blue = (int)(noiseValue * 0xFF);
-				int green = blue * 0x100;
-				int red = blue * 0x10000;
-				int finalColor = red + green + blue;
-
-				noiseImage.setRGB(x, y, finalColor);
+				noiseImage.setRGB(x, y, getGreyscaleNoiseColor(noiseValues[x][y]));
 			}
 		}
 		

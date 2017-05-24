@@ -1,10 +1,15 @@
-package terra;
+package gui;
 
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Random;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -16,11 +21,20 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
+import exception.ArgumentOutOfBoundsException;
+import generator.HeightMapGenerator;
+import noise.NoiseFallOffMap;
+import noise.PerlinNoise2D;
+
 public class TerraFrame extends JFrame
 {
+	private Random random = new Random();
+	
 	private final String APPLICATION_TITLE;
 	private final int WIDTH;
 	private final int HEIGHT;
+	
+	private static ArrayList<MapFrame> terrains = new ArrayList<MapFrame>();;
 	
 	public TerraFrame(String title, int width, int height)
 	{
@@ -32,35 +46,70 @@ public class TerraFrame extends JFrame
 		add(new TerraPanel());
 		pack();
         setSize(WIDTH, HEIGHT);
-        setIconImage(new HeightMapGenerator(32, 32, new PerlinNoise2D(32, 32, 6, 0.5, 3, 4)).getImage());
+        setIconImage(new HeightMapGenerator(32, 32, new PerlinNoise2D(32, 32, 0.15, 6, 0.5, 3, random.nextLong())).getImage());
         setVisible(true);
         setResizable(false);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
+	
+	public void saveImages()
+	{
+		try 
+		{
+			int x = 0;
+			
+			if (terrains.isEmpty())
+			{
+				JOptionPane.showMessageDialog(null, "Error: No Terrains to export!", APPLICATION_TITLE, 0);
+				return;
+			}
+			
+			for (MapFrame terrain : terrains)
+			{
+				BufferedImage image = terrain.getPanel().getImage();
+				String seed = terrain.getTitle().replaceAll("Terra - Seed: ", "");
+				
+				File outputImage = new File(image.hashCode() + "-" + seed + ".png");
+				ImageIO.write(image, "png", outputImage);
+				x++;
+			}
+			
+			JOptionPane.showMessageDialog(null, (x > 1) ? (x + " images were saved!") : (x + " image was saved!"), APPLICATION_TITLE, 1);
+		} 
+		catch (IOException exception) 
+		{
+			JOptionPane.showMessageDialog(null, "Error: Images could not be saved!", APPLICATION_TITLE, 0);
+		}
+	}
 
-	public void generateTerrain(int width, int height, int octaves, double persistence, double lacunarity, long seed, int fallOffMapIntensity, boolean useFallOffMap, boolean showRawNoise) 
+	public void generateTerrain(int width, int height, double roughness, int octaves, double persistence, double lacunarity, long seed, int fallOffMapIntensity, boolean useFallOffMap, boolean showRawNoise) 
 	{
 		BufferedImage baseNoise;
 		BufferedImage heightMap;
 
 		if (useFallOffMap)
 		{
-			baseNoise = new PerlinNoise2D(width, height, 5, persistence, lacunarity, seed, new NoiseFallOffMap(width, height, fallOffMapIntensity)).getNoiseImage();
-			heightMap = new HeightMapGenerator(width, height, new PerlinNoise2D(width, height, octaves, persistence, lacunarity, seed, new NoiseFallOffMap(width, height, fallOffMapIntensity))).getImage();
+			baseNoise = new PerlinNoise2D(width, height, roughness, octaves, persistence, lacunarity, seed, new NoiseFallOffMap(width, height, fallOffMapIntensity)).getNoiseImage();
+			heightMap = new HeightMapGenerator(width, height, new PerlinNoise2D(width, height, roughness, octaves, persistence, lacunarity, seed, new NoiseFallOffMap(width, height, fallOffMapIntensity))).getImage();
 		}
 		else
 		{
-			baseNoise = new PerlinNoise2D(width, height, 5, persistence, lacunarity, seed).getNoiseImage();
-			heightMap = new HeightMapGenerator(width, height, new PerlinNoise2D(width, height, octaves, persistence, lacunarity, seed)).getImage();
+			baseNoise = new PerlinNoise2D(width, height, roughness, octaves, persistence, lacunarity, seed).getNoiseImage();
+			heightMap = new HeightMapGenerator(width, height, new PerlinNoise2D(width, height, roughness, octaves, persistence, lacunarity, seed)).getImage();
 		}
 
 		if (showRawNoise)
 		{
-	        new MapFrame(APPLICATION_TITLE, width, height, new MapPanel(baseNoise));
+	        new MapFrame(APPLICATION_TITLE + " - Seed: " + seed, width, height, new MapPanel(baseNoise));
 		}
+
+		new MapFrame(APPLICATION_TITLE + " - Seed: " + seed, width, height, new MapPanel(heightMap));
+	}
 	
-		new MapFrame(APPLICATION_TITLE, width, height, new MapPanel(heightMap));
+	public static ArrayList<MapFrame> getTerrains()
+	{
+		return terrains;
 	}
 	
 	private class TerraPanel extends JPanel
@@ -74,6 +123,9 @@ public class TerraFrame extends JFrame
 		JLabel heightLabel;
 		JTextField heightField;
 		
+		JLabel roughnessLabel;
+		JTextField roughnessField;
+		
 		JLabel octavesLabel;
 		JTextField octavesField;
 		
@@ -82,6 +134,9 @@ public class TerraFrame extends JFrame
 		
 		JLabel lacunarityLabel;
 		JTextField lacunarityField;
+
+		JLabel randomSeedCheckBoxLabel;
+		JCheckBox randomSeedCheckBox;
 		
 		JLabel seedLabel;
 		JTextField seedField;
@@ -95,10 +150,13 @@ public class TerraFrame extends JFrame
 		JLabel generateLabel;
 		JButton generateButton;
 		
+		JLabel exportLabel;
+		JButton exportButton;
+		
 		public TerraPanel()
 		{
-			setLayout(new GridLayout(20, 1));
-			setBorder(BorderFactory.createCompoundBorder(new TitledBorder("Terrain Options"), new EmptyBorder(5, 5, 5, 5)));
+			setLayout(new GridLayout(26, 1));
+			setBorder(BorderFactory.createCompoundBorder(new TitledBorder("Terrain Options"), new EmptyBorder(0, 5, 0, 5)));
 			
 			showNoiseCheckBox = new JCheckBox("Show Raw Noise", false);
 			showNoiseCheckBox.setToolTipText("Toggles the displaying of raw noise data.");
@@ -114,20 +172,29 @@ public class TerraFrame extends JFrame
 			heightField.setText("640");
 			heightField.setToolTipText("The height of the generated terrain. (Integer)");
 			
+			roughnessLabel = new JLabel("Noise Roughness:");
+			roughnessField = new JTextField(10);
+			roughnessField.setText("0.2");
+			roughnessField.setToolTipText("The overall pixel roughness of the generated terrain. (Double)");
+			
 			octavesLabel = new JLabel("Noise Octaves:");
 			octavesField = new JTextField(10);
 			octavesField.setText("6");
-			octavesField.setToolTipText("The number of compound noise iterations. (Integer)");
+			octavesField.setToolTipText("The number of compound noise iterations that will be compiled together. (Integer)");
 			
 			persistenceLabel = new JLabel("Noise Persistence:");
 			persistenceField = new JTextField(10);
 			persistenceField.setText("0.5");
-			persistenceField.setToolTipText("The impact each noise iteration has on roughness. (Double)");
+			persistenceField.setToolTipText("The impact each noise iteration has on the previous iterations. (Double)");
 			
 			lacunarityLabel = new JLabel("Noise Lacunarity:");
 			lacunarityField = new JTextField(10);
 			lacunarityField.setText("2.8");
-			lacunarityField.setToolTipText("The distance between each peak of noise roughness. (Double)");
+			lacunarityField.setToolTipText("The distance between each node in the noise. (Double)");
+			
+			randomSeedCheckBoxLabel = new JLabel();
+			randomSeedCheckBox = new JCheckBox("Random Seed", false);
+			randomSeedCheckBox.setToolTipText("Generates a random seed.");
 			
 			seedLabel = new JLabel("Noise Seed:");
 			seedField = new JTextField(10);
@@ -145,9 +212,11 @@ public class TerraFrame extends JFrame
 			
 			generateLabel =  new JLabel();
 			generateButton = new JButton("Generate");
-			generateButton.addActionListener( new ActionListener() 
+			generateButton.setToolTipText("Creates a new terrain based on the given inputs.");
+			
+			generateButton.addActionListener(new ActionListener() 
 			{ 
-				public void actionPerformed(ActionEvent e) 
+				public void actionPerformed(ActionEvent event) 
 				{
 					try
 					{
@@ -163,6 +232,13 @@ public class TerraFrame extends JFrame
 						if (height < 64)
 						{
 							throw new ArgumentOutOfBoundsException("Error: Noise height must be greater than zero!");
+						}
+						
+						double roughness = Double.parseDouble(roughnessField.getText());
+						
+						if (roughness < 0)
+						{
+							throw new ArgumentOutOfBoundsException("Error: Noise roughness must be greater than zero!");
 						}
 						
 						int octaves = Integer.parseInt(octavesField.getText());
@@ -198,17 +274,36 @@ public class TerraFrame extends JFrame
 						boolean showRawNoise = showNoiseCheckBox.isSelected();
 						boolean useFallOffMap = fallOffMapCheckBox.isSelected();
 						
-						generateTerrain(width, height, octaves, persistence, lacunarity, seed, fallOffMapIntensity, useFallOffMap, showRawNoise);
+						if (randomSeedCheckBox.isSelected())
+						{
+							seed = random.nextLong();
+						}
+						
+						generateTerrain(width, height, roughness, octaves, persistence, lacunarity, seed, fallOffMapIntensity, useFallOffMap, showRawNoise);
+						exportButton.setEnabled(true);
 					}
 					catch (NumberFormatException exception)
 					{
-						JOptionPane.showMessageDialog(null, "Error: Invalid Input Type!", APPLICATION_TITLE, 2);
+						JOptionPane.showMessageDialog(null, "Error: Invalid Input Type!", APPLICATION_TITLE, 0);
 					}
 					catch (ArgumentOutOfBoundsException exception)
 					{
-						JOptionPane.showMessageDialog(null, exception.getMessage(), APPLICATION_TITLE, 2);
+						JOptionPane.showMessageDialog(null, exception.getMessage(), APPLICATION_TITLE, 0);
 					}
 				} 
+			});
+			
+			exportLabel =  new JLabel();
+			exportButton = new JButton("Export");
+			exportButton.setToolTipText("Saves all currently displaying terrain as images.");
+			exportButton.setEnabled(false);
+			
+			exportButton.addActionListener(new ActionListener() 
+			{ 
+				public void actionPerformed(ActionEvent event) 
+				{
+					saveImages();
+				}
 			});
 			
 			add(showNoiseCheckBox);
@@ -220,6 +315,9 @@ public class TerraFrame extends JFrame
 			add(heightLabel);
 			add(heightField);
 			
+			add(roughnessLabel);
+			add(roughnessField);
+			
 			add(octavesLabel);
 			add(octavesField);
 			
@@ -228,6 +326,9 @@ public class TerraFrame extends JFrame
 			
 			add(lacunarityLabel);
 			add(lacunarityField);
+			
+			add(randomSeedCheckBoxLabel);
+			add(randomSeedCheckBox);
 			
 			add(seedLabel);
 			add(seedField);
@@ -240,6 +341,9 @@ public class TerraFrame extends JFrame
 			
 			add(generateLabel);
 			add(generateButton);
+			
+			add(exportLabel);
+			add(exportButton);
 			
 			pack();
 		}

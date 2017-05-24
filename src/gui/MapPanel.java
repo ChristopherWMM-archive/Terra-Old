@@ -1,4 +1,4 @@
-package terra;
+package gui;
 
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
@@ -16,7 +16,11 @@ public class MapPanel extends JPanel
 
 	public void paintComponent(Graphics graphics) 
 	{
-		super.paintComponent(graphics);
 		graphics.drawImage(image, 0, 0, null);
+	}
+	
+	public BufferedImage getImage()
+	{
+		return image;
 	}
 }

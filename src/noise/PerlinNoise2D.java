@@ -1,4 +1,4 @@
-package terra;
+package noise;
 
 import java.awt.image.BufferedImage;
 import java.util.Random;
@@ -11,8 +11,12 @@ public class PerlinNoise2D extends Noise2D
 	private int octaves;
 	private double persistence;
 	private double lacunarity;
+	private double roughness;
 	private long seed;
-	public double mean;
+	
+	private double meanNoiseValue = 0.5;
+	private double maxNoiseValue = Double.MIN_VALUE;
+	private double minNoiseValue = Double.MAX_VALUE;
 	
 	static final int PERMUTATION_TABLE[] = new int[512];
 	static final int PERMUTATION_VALUES[] = {151,160,137,91,90,15,131,13,201,95,96,53,
@@ -72,6 +76,7 @@ public class PerlinNoise2D extends Noise2D
 	public PerlinNoise2D(int width, int height, long seed)
 	{
 		super(width, height);
+		this.roughness = 0;
 		this.octaves = 1;
 		this.persistence = 1;
 		this.lacunarity = 1;
@@ -83,6 +88,7 @@ public class PerlinNoise2D extends Noise2D
 	public PerlinNoise2D(int width, int height, long seed, NoiseFallOffMap fallOffMap)
 	{
 		super(width, height, fallOffMap);
+		this.roughness = 0;
 		this.octaves = 1;
 		this.persistence = 1;
 		this.lacunarity = 1;
@@ -91,20 +97,34 @@ public class PerlinNoise2D extends Noise2D
 		this.seed = random.nextInt();
 	}
 	
-	public PerlinNoise2D(int width, int height, int octaves, double persistence, double lacunarity)
+	public PerlinNoise2D(int width, int height, double roughness, long seed)
 	{
 		super(width, height);
-		this.octaves = octaves;
-		this.persistence = persistence;
-		this.lacunarity = lacunarity;
-		
-		random.setSeed(1);
+		this.roughness = roughness;
+		this.octaves = 1;
+		this.persistence = 1;
+		this.lacunarity = 1;
+
+		random.setSeed(seed);
 		this.seed = random.nextInt();
 	}
 	
-	public PerlinNoise2D(int width, int height, int octaves, double persistence, double lacunarity, NoiseFallOffMap fallOffMap)
+	public PerlinNoise2D(int width, int height, double roughness, long seed, NoiseFallOffMap fallOffMap)
 	{
 		super(width, height, fallOffMap);
+		this.roughness = roughness;
+		this.octaves = 1;
+		this.persistence = 1;
+		this.lacunarity = 1;
+		
+		random.setSeed(seed);
+		this.seed = random.nextInt();
+	}
+	
+	public PerlinNoise2D(int width, int height, double roughness, int octaves, double persistence, double lacunarity)
+	{
+		super(width, height);
+		this.roughness = roughness;
 		this.octaves = octaves;
 		this.persistence = persistence;
 		this.lacunarity = lacunarity;
@@ -113,9 +133,22 @@ public class PerlinNoise2D extends Noise2D
 		this.seed = random.nextInt();
 	}
 	
-	public PerlinNoise2D(int width, int height, int octaves, double persistence, double lacunarity, long seed)
+	public PerlinNoise2D(int width, int height, double roughness, int octaves, double persistence, double lacunarity, NoiseFallOffMap fallOffMap)
+	{
+		super(width, height, fallOffMap);
+		this.roughness = roughness;
+		this.octaves = octaves;
+		this.persistence = persistence;
+		this.lacunarity = lacunarity;
+		
+		random.setSeed(1);
+		this.seed = random.nextInt();
+	}
+	
+	public PerlinNoise2D(int width, int height, double roughness, int octaves, double persistence, double lacunarity, long seed)
 	{
 		super(width, height);
+		this.roughness = roughness;
 		this.octaves = octaves;
 		this.persistence = persistence;
 		this.lacunarity = lacunarity;
@@ -124,9 +157,10 @@ public class PerlinNoise2D extends Noise2D
 		this.seed = random.nextInt();
 	}
 	
-	public PerlinNoise2D(int width, int height, int octaves, double persistence, double lacunarity, long seed, NoiseFallOffMap fallOffMap)
+	public PerlinNoise2D(int width, int height, double roughness, int octaves, double persistence, double lacunarity, long seed, NoiseFallOffMap fallOffMap)
 	{
 		super(width, height, fallOffMap);
+		this.roughness = roughness;
 		this.octaves = octaves;
 		this.persistence = persistence;
 		this.lacunarity = lacunarity;
@@ -155,8 +189,8 @@ public class PerlinNoise2D extends Noise2D
 		double doubleX = (double) x / width;
 		double doubleY = (double) y / height;
 
-		double frequencyX = doubleX * frequency + seed;
-		double frequencyY = doubleY * frequency + seed;
+		double frequencyX = (doubleX * frequency) + seed;
+		double frequencyY = (doubleY * frequency) + seed;
 
 		int flooredX = (int) Math.floor(frequencyX) & 255;
 		int flooredY = (int) Math.floor(frequencyY) & 255;
@@ -206,9 +240,34 @@ public class PerlinNoise2D extends Noise2D
 	{
 		double[][] noiseValues = new double[width][height];
 		
-		double maxNoiseValue = Double.MIN_VALUE;
-		double minNoiseValue = Double.MAX_VALUE;
+		noiseValues = generateBaseNoiseArray(noiseValues);
+		noiseValues = addFallOffMapToNoiseArray(noiseValues);
+		noiseValues = addRoughnessToNoiseArray(noiseValues);
+		noiseValues = smoothNoiseArray(noiseValues);
 		
+		return noiseValues;
+	}
+	
+	@Override
+	protected BufferedImage generateNoiseImage() 
+	{
+		BufferedImage noiseImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+		double[][] noiseValues = generateNoiseArray();
+
+		for (int x = 0; x < width; x++)
+		{
+			for (int y = 0; y < height; y++)
+			{
+    			noiseImage.setRGB(x, y, getGreyscaleNoiseColor(noiseValues[x][y]));
+			}
+		}
+		
+		return noiseImage;
+	}
+	
+	private double[][] generateBaseNoiseArray(double[][] noiseValues)
+	{
 		for (int x = 0; x < width; x++)
 		{
 			for (int y = 0; y < height; y++)
@@ -226,6 +285,11 @@ public class PerlinNoise2D extends Noise2D
 			}
 		}
 		
+		return noiseValues;
+	}
+	
+	private double[][] addFallOffMapToNoiseArray(double[][] noiseValues)
+	{
 		for (int x = 0; x < width; x++)
 		{
 			for (int y = 0; y < height; y++)
@@ -247,47 +311,49 @@ public class PerlinNoise2D extends Noise2D
 				}
 			}
 		}
+		
+		return noiseValues;
+	}
+	
+	private double[][] addRoughnessToNoiseArray(double[][] noiseValues)
+	{
+		for (int x = 0; x < width; x++)
+		{
+			for (int y = 0; y < height; y++)
+			{
+				noiseValues[x][y] -= new WhiteNoise2D().getNoiseValue(x, y) * (roughness / 10);
 
+				if (noiseValues[x][y] > maxNoiseValue) 
+				{
+					maxNoiseValue = noiseValues[x][y];
+				} 
+				else if (noiseValues[x][y] < minNoiseValue) 
+				{
+					minNoiseValue = noiseValues[x][y];
+				}
+			}
+		}
+		
+		return noiseValues;
+	}
+	
+	private double[][] smoothNoiseArray(double[][] noiseValues)
+	{
 		for (int x = 0; x < width; x++)
 		{
 			for (int y = 0; y < height; y++)
 			{
 				noiseValues[x][y] = inverseLerp(minNoiseValue, maxNoiseValue, noiseValues[x][y]);
-				mean += noiseValues[x][y];
+				meanNoiseValue += noiseValues[x][y];
 			}
 		}
 
-		mean /= (width * height);
+		meanNoiseValue /= (width * height);
 		
 		return noiseValues;
 	}
 	
-	@Override
-	protected BufferedImage generateNoiseImage() 
-	{
-		BufferedImage noiseImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-
-		double[][] noise = generateNoiseArray();
-
-		for (int x = 0; x < width; x++)
-		{
-			for (int y = 0; y < height; y++)
-			{
-				double noiseValue = noise[x][y];
-
-				int blue = (int)(noiseValue * 0xFF);
-				int green = blue * 0x100;
-				int red = blue * 0x10000;
-    			int finalColor = red + green + blue;
-
-    			noiseImage.setRGB(x, y, finalColor);
-			}
-		}
-		
-		return noiseImage;
-	}
-	
-	private static double lerp(double amount, double left, double right) 
+	private double lerp(double amount, double left, double right) 
 	{
 		return ((1 - amount) * left + amount * right);
 	}
@@ -297,12 +363,12 @@ public class PerlinNoise2D extends Noise2D
 		return ((x - dataLow) / (dataHigh - dataLow));
 	}
     
-	private static double interpolate(double value) 
+	private double interpolate(double noiseValue) 
 	{ 
-		return value * value * value * (value * (value * 6 - 15) + 10); 
+		return noiseValue * noiseValue * noiseValue * (noiseValue * (noiseValue * 6 - 15) + 10); 
 	}
     
-	private static double calculateDotProduct(int corner, double x, double y)
+	private double calculateDotProduct(int corner, double x, double y)
 	{
 		switch(corner & 3)
 		{
@@ -368,5 +434,10 @@ public class PerlinNoise2D extends Noise2D
 	{
 		random.setSeed(seed);
 		this.seed = random.nextInt();
+	}
+	
+	public double getMeanNoiseValue()
+	{
+		return meanNoiseValue;
 	}
 }

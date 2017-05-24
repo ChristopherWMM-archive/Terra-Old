@@ -1,4 +1,4 @@
-package terra;
+package noise;
 
 import java.awt.image.BufferedImage;
 
@@ -67,7 +67,7 @@ public class NoiseFallOffMap
 		}
 	}
 
-	private double[][] generateNoiseArray() 
+	protected double[][] generateNoiseArray() 
 	{
 		double[][] noiseValues = new double[width][height];
 
@@ -82,7 +82,7 @@ public class NoiseFallOffMap
 		return noiseValues;
 	}
 
-	private BufferedImage generateNoiseImage() 
+	protected BufferedImage generateNoiseImage() 
 	{
 		BufferedImage noiseImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
